@@ -12,6 +12,7 @@ ANKI_SERVER = 'http://localhost:8765'
 DECK_NAME_COUNTRIES = 'Geographie: Staaten'
 DECK_NAME_CAPITALS = 'Geographie: Hauptstädte'
 WIKIPEDIA_URL = "https://de.wikipedia.org"
+UPLOAD_COMMONS = "//upload\\.wikimedia\\.org/wikipedia/commons"
 COUNTRIES_URL = f"{WIKIPEDIA_URL}/wiki/Liste_der_Staaten_der_Erde"
 COLUMN_STATE = 1
 COLUMN_LONG_NAME = 3
@@ -122,9 +123,25 @@ def remove_references_and_hyphen(s):
 
 
 def get_flag_url(tr):
-    match = re.search(r" (//upload\.wikimedia\.org.+?px-Flag_of_.+?\.png)", str(tr))
-    # TODO /wiki/Datei:Flag_of
-    return f"https:{match.group(1)}"
+    match = re.search(r"/wiki/Datei:Flag_of_.+?\.svg", str(tr))
+    if match:
+        flag_site_url = f"{WIKIPEDIA_URL}{match.group(0)}"
+        logging.debug(flag_site_url)
+        return get_flag_url_from_flag_site(flag_site_url)
+    match = re.search(r"(/wiki/.+?)\"", str(tr))
+    if match:
+        flag_site_url = f"{WIKIPEDIA_URL}{match.group(1)}"
+        logging.debug(flag_site_url)
+        return get_flag_url_from_flag_site(flag_site_url)
+    raise Exception("No flag url found")
+
+
+def get_flag_url_from_flag_site(flag_site_url):
+    result = requests.get(flag_site_url)
+    match = re.search(fr"{UPLOAD_COMMONS}.+?Flag_of_.+?\.png", result.text)
+    flag_url = match.group(0)
+    logging.debug(flag_url)
+    return f"https:{flag_url}"
 
 
 def get_location_url(tr):
@@ -169,7 +186,7 @@ def get_map_site_url(wiki_data_site):
 
 
 def get_map_url(map_site):
-    match = re.search(fr"https://upload.wikimedia.org/wikipedia/commons/.+?px-.+?.png", map_site)
+    match = re.search(fr"https:{UPLOAD_COMMONS}.+?px-.+?.png", map_site)
     if not match:
         raise Exception(f"No picture with pattern on map site")
     return match.group(0)
