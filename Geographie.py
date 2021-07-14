@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-import json
 import logging
 from logging import DEBUG
 import re
-import urllib.request
 
 import requests
 from bs4 import BeautifulSoup
 
-ANKI_SERVER = 'http://localhost:8765'
+from AnkiServer import *
+
 DECK_NAME_COUNTRIES = 'Geographie: Staaten'
 DECK_NAME_CAPITALS = 'Geographie: Hauptstädte'
 WIKIPEDIA_URL = "https://de.wikipedia.org"
@@ -21,80 +20,12 @@ COLUMN_ISO = 17
 COLUMN_TLD = 21
 
 
-def get_request(action, **params):
-    return {'action': action, 'params': params, 'version': 6}
-
-
-def invoke(action, **params):
-    request_data = get_request(action, **params)
-    request_json = json.dumps(request_data).encode('utf-8')
-    request_url = urllib.request.Request(ANKI_SERVER, request_json)
-    http_response = urllib.request.urlopen(request_url)
-    response = json.load(http_response)
-    if len(response) != 2:
-        raise Exception('response has an unexpected number of fields')
-    if 'error' not in response:
-        raise Exception('response is missing required error field')
-    if 'result' not in response:
-        raise Exception('response is missing required result field')
-    if response['error'] is not None:
-        raise Exception(response['error'])
-    return response['result']
-
-
 def get_country_note(country_info, pictures):
     return get_card(DECK_NAME_COUNTRIES, "Staat oder Gebiet: ?", country_info, pictures)
 
 
 def get_capital_note(country_info, capital, pictures):
     return get_card(DECK_NAME_CAPITALS, f"{country_info}<br>Hauptstadt: ?", capital, pictures)
-
-
-def get_card(deck_name, front, back, pictures):
-    return {
-        "deckName": deck_name,
-        "modelName": "Basic",
-        "fields": {
-            "Front": front,
-            "Back": back
-        },
-        "options": get_options(deck_name),
-        "picture": get_picture(pictures[0], pictures[1])
-    }
-
-
-def get_options(deck_name):
-    return {
-        "allowDuplicate": False,
-        "duplicateScope": "deck",
-        "duplicateScopeOptions": {
-            "deckName": deck_name,
-            "checkChildren": False
-        }
-    }
-
-
-def get_picture(location_url, flag_url):
-    file_name_location = get_file_name(location_url, ':')
-    file_name_flag = get_file_name(flag_url, '/')
-    return [{
-        "url": location_url,
-        "filename": file_name_location,
-        "fields": [
-            "Front"
-        ]
-    },
-    {
-        "url": flag_url,
-        "filename": file_name_flag,
-        "fields": [
-            "Front"
-        ]
-    }]
-
-
-def get_file_name(url, last_symbol_not_in_name):
-    return url[url.rfind(last_symbol_not_in_name) + 1:]
 
 
 def scrape_wikipedia():
@@ -186,10 +117,12 @@ def get_map_site_url(wiki_data_site):
 
 
 def get_map_url(map_site):
-    match = re.search(fr"https:{UPLOAD_COMMONS}.+?px-.+?.png", map_site)
+    match = re.search(fr"(https:{UPLOAD_COMMONS}.+?px-.+?.png)\"", map_site)
     if not match:
         raise Exception(f"No picture with pattern on map site")
-    return match.group(0)
+    map_url = match.group(1)
+    logging.debug(map_url)
+    return map_url
 
 
 logging.basicConfig(level=DEBUG)
