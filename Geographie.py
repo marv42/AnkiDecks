@@ -37,7 +37,8 @@ def scrape_wikipedia():
         if 'hintergrundfarbe' in str(tr):
             continue
         info = tr.text.split('\n')
-        name = f"{remove_references_and_hyphen(info[COLUMN_STATE])}<br>" \
+        state_name = get_state_name(tr)
+        name = f"{state_name}<br>" \
                f"Langform: {remove_references_and_hyphen(info[COLUMN_LONG_NAME])}<br>" \
                f"ISO-3: {info[COLUMN_ISO]}"
         if len(info) >= COLUMN_TLD and info[COLUMN_TLD]:
@@ -46,6 +47,11 @@ def scrape_wikipedia():
         flag_url = get_flag_url(tr)
         country_2_info[name] = [info[COLUMN_CAPITAL], [location_url, flag_url]]
     return country_2_info
+
+
+def get_state_name(tr):
+    parsed = BeautifulSoup(str(tr), 'lxml')
+    return parsed.find("a")["title"]  # , href=True
 
 
 def remove_references_and_hyphen(s):
