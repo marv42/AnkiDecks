@@ -123,7 +123,7 @@ def get_map_site_url(wiki_data_site):
 
 
 def get_map_url(map_site):
-    match = re.search(fr"(https:{UPLOAD_COMMONS}.+?px-.+?.png)\"", map_site)
+    match = re.search(fr"(https:{UPLOAD_COMMONS}.+?\.png)\"", map_site)
     if not match:
         raise Exception(f"No picture with pattern on map site")
     map_url = match.group(1)
