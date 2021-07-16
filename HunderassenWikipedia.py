@@ -23,25 +23,32 @@ def scrape_wikipedia():
     for tr in all_trs:
         if 'Position' in str(tr) or "Gesamtzahl" in str(tr):
             continue
-        info = tr.text.split('\n')
-        dog = info[DOG_NAME_COLUMN]
         match = re.search(r" href=\"(.+?)\"", str(tr))
         dog_name_url = f"{WIKIPEDIA_URL}{match.group(1)}"
-        dog_pic_url = get_dog_pic_url(dog_name_url)
-        dog_info[dog] = [dog_pic_url]
+        result = requests.get(dog_name_url)
+        dog_name = get_dog_name(result.text)
+        dog_pic_url = get_dog_pic_url(result.text)
+        dog_info[dog_name] = [dog_pic_url]
     return dog_info
 
 
-def get_dog_pic_url(dog_name_url):
-    result = requests.get(dog_name_url)
-    match = re.search(fr"({UPLOAD_COMMONS}.+?\.jpg)\"", result.text)
+def get_dog_name(dog_site):
+    parsed_html = BeautifulSoup(dog_site, 'lxml')
+    title = parsed_html.find("title").text
+    dog_name = title[:title.rfind("–") - 1]  # (" ") - 2
+    logging.debug(dog_name)
+    return dog_name
+
+
+def get_dog_pic_url(dog_site):
+    match = re.search(fr"({UPLOAD_COMMONS}.+?\.jpg)\"", dog_site)
     dog_pic_url = f"https:{match.group(1)}"
     logging.debug(dog_pic_url)
     return dog_pic_url
 
 
 def get_dog_note(dog, picture_url):
-    return get_card(DECK_NAME_HUNDE, "Hunderasse: ?", dog, picture_url)
+    return get_card(DECK_NAME_HUNDE, "Hunderasse: ?<br>", dog, picture_url)
 
 
 logging.basicConfig(level=DEBUG)
