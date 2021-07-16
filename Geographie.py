@@ -21,11 +21,11 @@ COLUMN_TLD = 21
 
 
 def get_country_note(country_info, pictures):
-    return get_card(DECK_NAME_COUNTRIES, "Staat oder Gebiet: ?", country_info, pictures)
+    return get_card(DECK_NAME_COUNTRIES, "Staat oder Gebiet: ?<br>", country_info, pictures)
 
 
 def get_capital_note(country_info, capital, pictures):
-    return get_card(DECK_NAME_CAPITALS, f"{country_info}<br>Hauptstadt: ?", capital, pictures)
+    return get_card(DECK_NAME_CAPITALS, f"{country_info}<br>Hauptstadt: ?<br>", capital, pictures)
 
 
 def scrape_wikipedia():
@@ -39,8 +39,9 @@ def scrape_wikipedia():
         info = tr.text.split('\n')
         state_name = get_state_name(tr)
         name = f"{state_name}<br>" \
-               f"Langform: {remove_references_and_hyphen(info[COLUMN_LONG_NAME])}<br>" \
-               f"ISO-3: {info[COLUMN_ISO]}"
+               f"Langform: {remove_references_and_hyphen(info[COLUMN_LONG_NAME])}"
+        if len(info) >= COLUMN_ISO and info[COLUMN_ISO]:
+            name += f"<br>ISO-3: {info[COLUMN_ISO]}"
         if len(info) >= COLUMN_TLD and info[COLUMN_TLD]:
             name += f"<br>TLD: {info[COLUMN_TLD]}"
         location_url = get_location_url(tr)
@@ -51,7 +52,10 @@ def scrape_wikipedia():
 
 def get_state_name(tr):
     parsed = BeautifulSoup(str(tr), 'lxml')
-    return parsed.find("a")["title"]  # , href=True
+    a_href = parsed.find("a")
+    state_name = a_href.text
+    logging.debug(state_name)
+    return state_name
 
 
 def remove_references_and_hyphen(s):
@@ -111,7 +115,7 @@ def request_map_site(wiki_data_site):
 
 
 def get_map_site_url(wiki_data_site):
-    for part_of_picture_url in ["ocation", "Locator_map_of_", "orthographic", "_Current_en", "_in_its_region",
+    for part_of_picture_url in ["orthographic", "ocation", "Locator_map_of_", "_Current_en", "_in_its_region",
                                  "_on_the_globe_", "-"]:
         match = re.search(fr"(https://commons\.wikimedia\.org/wiki/File:.*?{part_of_picture_url}.*?\.(svg|png))\"",
                           wiki_data_site)
