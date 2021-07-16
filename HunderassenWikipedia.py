@@ -35,7 +35,10 @@ def scrape_wikipedia():
 def get_dog_name(dog_site):
     parsed_html = BeautifulSoup(dog_site, 'lxml')
     title = parsed_html.find("title").text
-    dog_name = title[:title.rfind("–") - 1]  # (" ") - 2
+    index_after_name = title.rfind("–")  # (" ") - 1
+    if "(" in title:
+        index_after_name = title.rfind("(")
+    dog_name = title[:index_after_name - 1]
     logging.debug(dog_name)
     return dog_name
 
