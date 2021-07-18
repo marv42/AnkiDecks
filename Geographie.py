@@ -13,11 +13,11 @@ DECK_NAME_CAPITALS = 'Geographie: Hauptstädte'
 WIKIPEDIA_URL = "https://de.wikipedia.org"
 UPLOAD_COMMONS = "//upload\\.wikimedia\\.org/wikipedia/commons"
 COUNTRIES_URL = f"{WIKIPEDIA_URL}/wiki/Liste_der_Staaten_der_Erde"
-COLUMN_STATE = 1
-COLUMN_LONG_NAME = 3
-COLUMN_CAPITAL = 5
-COLUMN_ISO = 17
-COLUMN_TLD = 21
+COLUMN_STATE = 0
+COLUMN_LONG_NAME = 1
+COLUMN_CAPITAL = 2
+COLUMN_ISO = 7
+COLUMN_TLD = 9
 
 
 def get_country_note(country_info, pictures):
@@ -34,43 +34,56 @@ def scrape_wikipedia():
     parsed_html = BeautifulSoup(result.text, 'lxml')
     all_trs = parsed_html.find_all("tr")
     for tr in all_trs:
-        if 'hintergrundfarbe' in str(tr):
+        tr = str(tr)
+        if 'hintergrundfarbe' in tr:
             continue
-        info = tr.text.split('\n')
-        state_name = get_state_name(tr)
-        name = f"{state_name}<br>" \
-               f"Langform: {remove_references_and_hyphen(info[COLUMN_LONG_NAME])}"
-        if len(info) >= COLUMN_ISO and info[COLUMN_ISO]:
-            name += f"<br>ISO-3: {info[COLUMN_ISO]}"
-        if len(info) >= COLUMN_TLD and info[COLUMN_TLD]:
-            name += f"<br>TLD: {info[COLUMN_TLD]}"
+        info = tr.split('</td>')
+        state_name = get_text_of_href(info[COLUMN_STATE])
+        long_name = get_text(info[COLUMN_LONG_NAME])
+        capital = get_text(info[COLUMN_CAPITAL])
+        iso3 = get_text(info[COLUMN_ISO])
+        tld = get_text(info[COLUMN_TLD])
+        name = state_name
+        if long_name != state_name:
+            name += f"<br>Langform: {long_name}"
+        if len(iso3) > 0:
+            name += f"<br>ISO-3: {iso3}"
+        if len(tld) > 0:
+            name += f"<br>TLD: {tld}"
         location_url = get_location_url(tr)
         flag_url = get_flag_url(tr)
-        capital = remove_references_and_hyphen(info[COLUMN_CAPITAL])
         country_2_info[name] = [capital, [location_url, flag_url]]
     return country_2_info
 
 
-def get_state_name(tr):
-    parsed = BeautifulSoup(str(tr), 'lxml')
+def get_text_of_href(info):
+    parsed = BeautifulSoup(info, 'lxml')
     a_href = parsed.find("a")
-    state_name = a_href.text
-    logging.debug(state_name)
-    return state_name
+    text = remove_references_and_hyphen(a_href.text)
+    logging.debug(text)
+    return text
+
+
+def get_text(info):
+    parsed = BeautifulSoup(info, 'lxml')
+    text = remove_references_and_hyphen(parsed.text)
+    logging.debug(text)
+    return text
 
 
 def remove_references_and_hyphen(s):
     s = re.sub(r"\[.*?\]", "", s)
-    return re.sub("\\xad", "", s)
+    re.sub("\\xad", "", s)
+    return re.sub("\\n", "", s)
 
 
 def get_flag_url(tr):
-    match = re.search(r"/wiki/Datei:Flag_of_.+?\.svg", str(tr))
+    match = re.search(r"/wiki/Datei:Flag_of_.+?\.svg", tr)
     if match:
         flag_site_url = f"{WIKIPEDIA_URL}{match.group(0)}"
         logging.debug(flag_site_url)
         return get_flag_url_from_flag_site(flag_site_url)
-    match = re.search(r"(/wiki/.+?)\"", str(tr))
+    match = re.search(r"(/wiki/.+?)\"", tr)
     if match:
         flag_site_url = f"{WIKIPEDIA_URL}{match.group(1)}"
         logging.debug(flag_site_url)
@@ -98,8 +111,8 @@ def request_wiki_data_site(tr):
 
 
 def get_wiki_data_url(tr):
-    parsed_tr = BeautifulSoup(str(tr), 'lxml')
-    wiki_link = parsed_tr.find("a")  # , href=True
+    parsed = BeautifulSoup(tr, 'lxml')
+    wiki_link = parsed.find("a")  # , href=True
     result = requests.get(f"{WIKIPEDIA_URL}{wiki_link['href']}")
     state_site = result.text
     match = re.search(r"(https://www\.wikidata\.org/wiki/Special:EntityPage/Q.+?)#sitelinks-wikipedia", state_site)
@@ -116,8 +129,8 @@ def request_map_site(wiki_data_site):
 
 
 def get_map_site_url(wiki_data_site):
-    for part_of_picture_url in ["orthographic", "ocation", "Locator_map_of_", "_Current_en", "_in_its_region",
-                                 "_on_the_globe_", "-"]:
+    for part_of_picture_url in ["orthographic", "_on_the_globe_", "ocation", "Locator_map_of_", "_Current_en",
+                                "_in_its_region", "-"]:
         match = re.search(fr"(https://commons\.wikimedia\.org/wiki/File:.*?{part_of_picture_url}.*?\.(svg|png))\"",
                           wiki_data_site)
         if match:
