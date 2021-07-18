@@ -11,9 +11,6 @@ DECK_NAME_BAEUME = 'Bäume'
 BAUMKUNDE = 'https://www.baumkunde.de/'
 TREES_URL = f'{BAUMKUNDE}haeufigste-baeume-deutschland.php'
 
-logging.basicConfig(level=DEBUG)
-invoke('createDeck', deck=DECK_NAME_BAEUME)
-
 
 def scrape_site():
     tree_2_info = {}
@@ -50,13 +47,17 @@ def get_pic_url(div, class_name):
 
 
 def class_is_name(descendant, class_name):
-    return descendant.name == 'div' and 'class' in descendant.attrs.keys() and class_name in descendant['class'][0]
+    return descendant.name == 'div' and \
+           'class' in descendant.attrs.keys() and \
+           class_name in descendant['class'][0]
 
 
 def get_tree_note(tree_info, pictures):
-    return get_card(DECK_NAME_BAEUME, "Baum oder Strauch: ?<br>", tree_info, pictures)
+    return get_card(DECK_NAME_BAEUME, "Baum/Strauch: ?<br>", tree_info, pictures)
 
 
+logging.basicConfig(level=DEBUG)
+invoke('createDeck', deck=DECK_NAME_BAEUME)
 tree_2_info = scrape_site()
 for tree_info in tree_2_info:
     pictures = tree_2_info[tree_info]
