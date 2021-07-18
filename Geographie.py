@@ -46,7 +46,8 @@ def scrape_wikipedia():
             name += f"<br>TLD: {info[COLUMN_TLD]}"
         location_url = get_location_url(tr)
         flag_url = get_flag_url(tr)
-        country_2_info[name] = [info[COLUMN_CAPITAL], [location_url, flag_url]]
+        capital = remove_references_and_hyphen(info[COLUMN_CAPITAL])
+        country_2_info[name] = [capital, [location_url, flag_url]]
     return country_2_info
 
 
