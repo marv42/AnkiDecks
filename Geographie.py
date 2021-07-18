@@ -39,6 +39,7 @@ def scrape_wikipedia():
             continue
         info = tr.split('</td>')
         state_name = get_text_of_href(info[COLUMN_STATE])
+        state_name = swap_if_comma(state_name)
         long_name = get_text(info[COLUMN_LONG_NAME])
         capital = get_text(info[COLUMN_CAPITAL])
         iso3 = get_text(info[COLUMN_ISO])
@@ -50,6 +51,7 @@ def scrape_wikipedia():
             name += f"<br>ISO-3: {iso3}"
         if len(tld) > 0:
             name += f"<br>TLD: {tld}"
+        name += "<br>"
         location_url = get_location_url(tr)
         flag_url = get_flag_url(tr)
         country_2_info[name] = [capital, [location_url, flag_url]]
@@ -65,6 +67,7 @@ def get_text_of_href(info):
 
 
 def get_text(info):
+    info = info.replace("<br>", " ")
     parsed = BeautifulSoup(info, 'lxml')
     text = remove_references_and_hyphen(parsed.text)
     logging.debug(text)
@@ -73,8 +76,16 @@ def get_text(info):
 
 def remove_references_and_hyphen(s):
     s = re.sub(r"\[.*?\]", "", s)
-    re.sub("\\xad", "", s)
+    s = re.sub("\\xad", "", s)
     return re.sub("\\n", "", s)
+
+
+def swap_if_comma(s):
+    if ',' in s:
+        elements = s.split(',')
+        s = f"{elements[1]} {elements[0]}"
+        s = s.lstrip()
+    return s
 
 
 def get_flag_url(tr):
