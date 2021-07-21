@@ -48,7 +48,7 @@ def get_pic_url(info):
     soup = BeautifulSoup(name_info, 'lxml')
     if soup.a:
         url = f"{soup.a['href']}"
-        if "de.wikipedia.org" in url:  # TODO
+        if "de.wikipedia.org" in url:
             return
         painting_url = prepend_x_if_not_there(url, WIKIPEDIA_URL)
         url = request_and_get_upload_jpg(painting_url)
@@ -59,13 +59,15 @@ def get_pic_url(info):
 def request_and_get_upload_jpg(url):
     result = requests.get(url)
     soup = BeautifulSoup(result.text, 'lxml')
-    class_list = ["fullImageLink", "infobox-image"]
+    class_list = ["fullImageLink", "infobox-image", "mw-mmv-image", "thumb tright", "mw-parser-output"]
     for c in class_list:
         class_found = soup.find(attrs={"class": c})
         if class_found:
-            src = class_found.a.contents[0]['src']
-            logging.debug(src)
-            return prepend_x_if_not_there(src, HTTPS)
+            content = class_found.a.contents[0]
+            if 'String' not in str(type(content)):
+                src = content['src']
+                logging.debug(src)
+                return prepend_x_if_not_there(src, HTTPS)
 
 
 def prepend_x_if_not_there(url, x):
