@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
-import logging
 from logging import DEBUG
-import re
 
 import requests
-from bs4 import BeautifulSoup
 
 from AnkiServer import *
 
@@ -31,10 +28,12 @@ def get_capital_note(country_info, capital, pictures):
 def scrape_wikipedia():
     country_2_info = {}
     result = requests.get(COUNTRIES_URL)
-    parsed_html = BeautifulSoup(result.text, 'lxml')
-    all_trs = parsed_html.find_all("tr")
+    soup = BeautifulSoup(result.text, 'lxml')
+    all_trs = soup.find_all("tr")
     for tr in all_trs:
         tr = str(tr)
+        # if 'Guinea' not in tr:
+        #     continue
         if 'hintergrundfarbe' in tr:
             continue
         info = tr.split('</td>')
@@ -59,25 +58,11 @@ def scrape_wikipedia():
 
 
 def get_text_of_href(info):
-    parsed = BeautifulSoup(info, 'lxml')
-    a_href = parsed.find("a")
+    soup = BeautifulSoup(info, 'lxml')
+    a_href = soup.find("a")
     text = remove_references_and_hyphen(a_href.text)
     logging.debug(text)
     return text
-
-
-def get_text(info):
-    info = info.replace("<br>", " ")
-    parsed = BeautifulSoup(info, 'lxml')
-    text = remove_references_and_hyphen(parsed.text)
-    logging.debug(text)
-    return text
-
-
-def remove_references_and_hyphen(s):
-    s = re.sub(r"\[.*?\]", "", s)
-    s = re.sub("\\xad", "", s)
-    return re.sub("\\n", "", s)
 
 
 def swap_if_comma(s):
@@ -122,9 +107,9 @@ def request_wiki_data_site(tr):
 
 
 def get_wiki_data_url(tr):
-    parsed = BeautifulSoup(tr, 'lxml')
-    wiki_link = parsed.find("a")  # , href=True
-    result = requests.get(f"{WIKIPEDIA_URL}{wiki_link['href']}")
+    soup = BeautifulSoup(tr, 'lxml')
+    state_url = f"{WIKIPEDIA_URL}{soup.a['href']}"
+    result = requests.get(state_url)
     state_site = result.text
     match = re.search(r"(https://www\.wikidata\.org/wiki/Special:EntityPage/Q.+?)#sitelinks-wikipedia", state_site)
     if not match:

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import json
+import logging
+import re
 import urllib.request
+from bs4 import BeautifulSoup
 
 ANKI_SERVER = 'http://localhost:8765'
 
@@ -9,7 +12,7 @@ def get_request(action, **params):
     return {'action': action, 'params': params, 'version': 6}
 
 
-def invoke(action, **params):
+def invoke(action, **params):  # cf. https://github.com/FooSoft/anki-connect
     request_data = get_request(action, **params)
     request_json = json.dumps(request_data).encode('utf-8')
     request_url = urllib.request.Request(ANKI_SERVER, request_json)
@@ -67,3 +70,17 @@ def get_picture(pictures):
 
 def get_file_name(url, last_symbol_not_in_name):
     return url[url.rfind(last_symbol_not_in_name) + 1:]
+
+
+def get_text(info):
+    info = info.replace("<br>", " ").replace("<br/>", " ")
+    soup = BeautifulSoup(info, 'lxml')
+    text = remove_references_and_hyphen(soup.text)
+    logging.debug(text)
+    return text
+
+
+def remove_references_and_hyphen(s):
+    s = re.sub(r"\[.*?\]", "", s)
+    s = re.sub("\\xad", "", s)
+    return re.sub("\\n", "", s)
