@@ -48,7 +48,7 @@ def get_pic_url(info):
     soup = BeautifulSoup(name_info, 'lxml')
     if soup.a:
         url = f"{soup.a['href']}"
-        if "de.wikipedia.org" in url:
+        if "de.wikipedia.org" in url or "False_Start" in url:
             return
         painting_url = prepend_x_if_not_there(url, WIKIPEDIA_URL)
         url = request_and_get_upload_jpg(painting_url)
@@ -89,6 +89,7 @@ def get_painting_note(info):
 logging.basicConfig(level=DEBUG)
 invoke('createDeck', deck=DECK_NAME_PAINTINGS)
 painting_info = scrape_wikipedia()
+logging.debug(f"len: {len(painting_info)}")
 for info in painting_info:
     painting_note = get_painting_note(info)
     logging.debug(f"adding {painting_note}")
