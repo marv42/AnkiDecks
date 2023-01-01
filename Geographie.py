@@ -11,10 +11,7 @@ WIKIPEDIA_URL = "https://de.wikipedia.org"
 UPLOAD_COMMONS = "//upload\\.wikimedia\\.org/wikipedia/commons"
 COUNTRIES_URL = f"{WIKIPEDIA_URL}/wiki/Liste_der_Staaten_der_Erde"
 COLUMN_STATE = 0
-COLUMN_LONG_NAME = 1
-COLUMN_CAPITAL = 2
-COLUMN_ISO = 7
-COLUMN_TLD = 9
+COLUMN_LONG_NAME = COLUMN_STATE + 1
 
 
 def get_country_note(country_info, pictures):
@@ -38,13 +35,21 @@ def scrape_wikipedia():
             continue
         info = tr.split('</td>')
         state_name = get_text_of_href(info[COLUMN_STATE])
+        if state_name == 'Staat':
+            continue
         state_name = swap_if_comma(state_name)
-        long_name = get_text(info[COLUMN_LONG_NAME])
-        capital = get_text(info[COLUMN_CAPITAL])
-        iso3 = get_text(info[COLUMN_ISO])
-        tld = get_text(info[COLUMN_TLD])
+        column_capital = COLUMN_STATE + 1
+        long_name = ""
+        if "colspan=\"2\"" not in tr:
+            long_name = get_text(info[COLUMN_LONG_NAME])
+            column_capital += 1
+        capital = get_text(info[column_capital])
+        column_iso3 = column_capital + 5
+        column_tld = column_capital + 7
+        iso3 = get_text(info[column_iso3])
+        tld = get_text(info[column_tld])
         name = state_name
-        if long_name != state_name:
+        if 'long_name' in globals():
             name += f"<br>Langform: {long_name}"
         if len(iso3) > 0:
             name += f"<br>ISO-3: {iso3}"
@@ -126,7 +131,7 @@ def request_map_site(wiki_data_site):
 
 def get_map_site_url(wiki_data_site):
     for part_of_picture_url in ["orthographic", "_on_the_globe_", "ocation", "Locator_map_of_", "_Current_en",
-                                "_in_its_region", "-"]:
+                                "_in_its_region", "(zoomed)", "-"]:
         match = re.search(fr"(https://commons\.wikimedia\.org/wiki/File:.*?{part_of_picture_url}.*?\.(svg|png))\"",
                           wiki_data_site)
         if match:
