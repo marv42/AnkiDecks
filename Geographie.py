@@ -49,7 +49,7 @@ def scrape_wikipedia():
         iso3 = get_text(info[column_iso3])
         tld = get_text(info[column_tld])
         name = state_name
-        if 'long_name' in globals():
+        if len(long_name) > 0:
             name += f"<br>Langform: {long_name}"
         if len(iso3) > 0:
             name += f"<br>ISO-3: {iso3}"
