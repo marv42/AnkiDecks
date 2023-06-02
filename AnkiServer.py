@@ -64,6 +64,14 @@ def get_picture(pictures):
                 "Front"
             ]
         }
+        if "http" not in picture_url:
+            picture = {
+                "path": picture_url,
+                "filename": file_name,
+                "fields": [
+                    "Front"
+                ]
+            }
         picture_list.append(picture)
     return picture_list
 
