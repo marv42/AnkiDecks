@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import urllib.request
+from urllib.parse import unquote
 from bs4 import BeautifulSoup
 
 ANKI_SERVER = 'http://localhost:8765'
@@ -56,7 +57,7 @@ def get_options(deck_name):
 def get_picture(pictures):
     picture_list = []
     for picture_url in pictures:
-        file_name = get_file_name(picture_url, '/')  # TODO ':'?
+        file_name = get_file_name(picture_url, '/')
         picture = {
             "url": picture_url,
             "filename": file_name,
@@ -77,7 +78,9 @@ def get_picture(pictures):
 
 
 def get_file_name(url, last_symbol_not_in_name):
-    return url[url.rfind(last_symbol_not_in_name) + 1:]
+    file_name = url[url.rfind(last_symbol_not_in_name) + 1:]
+    file_name = unquote(file_name)
+    return file_name
 
 
 def get_text(info):
