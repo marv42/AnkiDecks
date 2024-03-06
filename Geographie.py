@@ -29,13 +29,13 @@ def scrape_wikipedia():
     all_trs = soup.find_all("tr")
     for tr in all_trs:
         tr = str(tr)
-        # if 'Guinea' not in tr:
-        #     continue
+        # if 'Ägypten' in tr:
+        #     break
         if 'hintergrundfarbe' in tr:
             continue
         info = tr.split('</td>')
         state_name = get_text_of_href(info[COLUMN_STATE])
-        if state_name == 'Staat':
+        if state_name in ['Staat', '', 'Erde']:
             continue
         state_name = swap_if_comma(state_name)
         column_capital = COLUMN_STATE + 1
@@ -65,8 +65,10 @@ def scrape_wikipedia():
 def get_text_of_href(info):
     soup = BeautifulSoup(info, 'lxml')
     a_href = soup.find("a")
+    if a_href is None:
+        return ""
     text = remove_references_and_hyphen(a_href.text)
-    logging.debug(text)
+    logging.debug(f"text: {text}")
     return text
 
 
@@ -82,12 +84,12 @@ def get_flag_url(tr):
     match = re.search(r"/wiki/Datei:Flag_of_.+?\.svg", tr)
     if match:
         flag_site_url = f"{WIKIPEDIA_URL}{match.group(0)}"
-        logging.debug(flag_site_url)
+        logging.debug(f"flag_site_url: {flag_site_url}")
         return get_flag_url_from_flag_site(flag_site_url)
     match = re.search(r"(/wiki/.+?)\"", tr)
     if match:
         flag_site_url = f"{WIKIPEDIA_URL}{match.group(1)}"
-        logging.debug(flag_site_url)
+        logging.debug(f"flag_site_url: {flag_site_url}")
         return get_flag_url_from_flag_site(flag_site_url)
     raise Exception("No flag url found")
 
@@ -96,8 +98,9 @@ def get_flag_url_from_flag_site(flag_site_url):
     result = requests.get(flag_site_url)
     match = re.search(fr"{UPLOAD_COMMONS}.+?Flag_of_.+?\.png", result.text)
     flag_url = match.group(0)
-    logging.debug(flag_url)
-    return f"https:{flag_url}"
+    flag_url = f"https:{flag_url}"
+    logging.debug(f"flag_url: {flag_url}")
+    return flag_url
 
 
 def get_location_url(tr):
@@ -120,7 +123,7 @@ def get_wiki_data_url(tr):
     if not match:
         raise Exception(f"No wikidata site on state site {state_site}")
     wiki_data_url = match.group(1)
-    logging.debug(wiki_data_url)
+    logging.debug(f"wiki_data_url: {wiki_data_url}")
     return wiki_data_url
 
 
@@ -130,13 +133,11 @@ def request_map_site(wiki_data_site):
 
 
 def get_map_site_url(wiki_data_site):
-    for part_of_picture_url in ["orthographic", "_on_the_globe_", "ocation", "Locator_map_of_", "_Current_en",
-                                "_in_its_region", "(zoomed)", "-"]:
-        match = re.search(fr"(https://commons\.wikimedia\.org/wiki/File:.*?{part_of_picture_url}.*?\.(svg|png))\"",
-                          wiki_data_site)
+    for part_of_picture_url in ["orthographic", "_on_the_globe_", "ocation", "Locator_map_of_", "_Current_en", "_in_its_region", "(zoomed)", "-"]:
+        match = re.search(fr"(https://commons\.wikimedia\.org/wiki/File:.*?{part_of_picture_url}.*?\.(svg|png))\"", wiki_data_site)
         if match:
             map_site_url = match.group(1)
-            logging.debug(map_site_url)
+            logging.debug(f"map_site_url: {map_site_url}")
             return map_site_url
     raise Exception(f"No map site with part_of_picture_url on wikidata site found")
 
@@ -146,7 +147,7 @@ def get_map_url(map_site):
     if not match:
         raise Exception(f"No picture with pattern on map site")
     map_url = match.group(1)
-    logging.debug(map_url)
+    logging.debug(f"map_url: {map_url}")
     return map_url
 
 
