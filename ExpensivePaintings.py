@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import logging
 from logging import DEBUG
 import requests
 from AnkiServer import *
@@ -11,8 +10,8 @@ PAINTINGS_URL = f"{WIKIPEDIA_URL}/wiki/List_of_most_expensive_paintings"
 UPLOAD_WIKIMEDIA = "//upload.wikimedia.org/wikipedia/"
 COLUMN_PRICE = 0
 COLUMN_NAME = 1
-COLUMN_ARTIST = 3
 COLUMN_IMAGE = 2
+COLUMN_ARTIST = 3
 
 
 def scrape_wikipedia():
@@ -33,6 +32,8 @@ def scrape_wikipedia():
         painting_name = get_text(info[COLUMN_NAME])
         artist = get_text(info[COLUMN_ARTIST])
         price = get_price(info[COLUMN_PRICE])
+        if not price:
+            continue
         painting_info.append([painting_name, artist, price, pic_url])
     return painting_info
 
@@ -48,7 +49,7 @@ def get_pic_url(info):
     soup = BeautifulSoup(name_info, 'lxml')
     if soup.a:
         url = f"{soup.a['href']}"
-        if "de.wikipedia.org" in url or "False_Start" in url:
+        if "de.wikipedia.org" in url or "False_Start" in url or "phabricator" in url:
             return
         painting_url = prepend_x_if_not_there(url, WIKIPEDIA_URL)
         url = request_and_get_upload_jpg(painting_url)
@@ -78,6 +79,8 @@ def prepend_x_if_not_there(url, x):
 
 def get_price(info):
     soup = BeautifulSoup(info, 'lxml')
+    if not soup.th:
+        return
     return remove_references_and_hyphen(soup.th.text)
 
 
@@ -92,5 +95,6 @@ painting_info = scrape_wikipedia()
 logging.debug(f"len: {len(painting_info)}")
 for info in painting_info:
     painting_note = get_painting_note(info)
+    painting_note['options']['allowDuplicate'] = True
     logging.debug(f"adding {painting_note}")
     invoke('addNote', note=painting_note)
